@@ -1,35 +1,43 @@
+import os
+from pathlib import Path
+from platform import system
+from urllib.parse import urlparse
+import time
+
 from selenium import webdriver
-import asyncio
-import pyppeteer
-from datetime import datetime
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.action_chains import ActionChains
+
+url = "https://proshoper.ru/actions/yarche/moskva/"
+
+options = Options()
+options.add_argument("--headless")
+options.add_experimental_option("excludeSwitches", ["enable-automation"])
+options.add_experimental_option('useAutomationExtension', False)
+options.add_argument("--disable-blink-features=AutomationControlled")
+
+exec_path = os.path.join(os.getcwd(), 'driver', 'chromedriver.exe') if system() == "Windows" else \
+    os.path.join(os.getcwd(), 'driver', 'chromedriver')
+
+driver = webdriver.Chrome(options=options, service=Service(log_path=os.devnull, executable_path=exec_path))
+
+driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
+    'source': '''
+        delete window.cdc_adoQpoasnfa76pfcZLmcfl_Array;
+        delete window.cdc_adoQpoasnfa76pfcZLmcfl_Promise;
+        delete window.cdc_adoQpoasnfa76pfcZLmcfl_Symbol;
+  '''
+})
 
 
-list_link = input("Введите ссылку на сайт или группу ссылок через пробел: ").split()
-print("1: Фулскрин сайта")
-print("2: Pass")
-command = input("Введите команду: ")
+def open_blocks(url, driver):
+    driver.maximize_window()
 
-# driver = webdriver.Chrome()
-# driver.get("https://proshoper.ru/actions/yarche/moskva/")
-# screenshot = driver.save_screenshot("first_screen.png")
-# driver.quit()
+    time.sleep(3)
+    driver.close()
+    driver.quit()
 
 
-async def full_screen(list_link):
-    i = 1
-    for link in list_link:
-        browser = await pyppeteer.launch()
-        page = await browser.newPage()
-        await page.goto(link)
-        tfn = datetime.now()
-        time_for_name = f"{tfn.day}-{tfn.month}-{tfn.year}_{tfn.hour}:{tfn.minute}:{tfn.second}"
-        await page.screenshot(path=f"full_screen_{time_for_name}_{i}.jpg", fullPage=True)
-        await browser.close()
-        print(f"Save full_screen_{i}.jpg")
-        i += 1
-
-
-if command == "1":
-    asyncio.get_event_loop().run_until_complete(full_screen(list_link))
-else:
-    print('pass')
+open_blocks(url, driver)
